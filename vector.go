@@ -1,4 +1,4 @@
-package goishi
+package main
 
 // Vec2 position or direction in 2D board
 type Vec2 struct {

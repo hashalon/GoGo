@@ -1,4 +1,4 @@
-package goishi
+package main
 
 // LibSet set of liberties for a group of stones
 type LibSet struct {

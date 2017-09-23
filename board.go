@@ -1,4 +1,4 @@
-package goishi
+package main
 
 // Stone stone placed in the board
 type Stone struct {
