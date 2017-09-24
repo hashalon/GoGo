@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"bytes"
 	"github.com/fatih/color"
+	tm "github.com/buger/goterm"
 )
 
-// define the characters to use for the display
+// CharSet define the characters to use for the display
 type CharSet struct {
 	white, black,
 	tl, tm, tr,
@@ -26,7 +27,7 @@ type ColorSet struct {
 
 // Display configuration to display board
 type Display struct {
-	size uint
+	size uint8
 	stoneW, stoneB rune
 	colorW, colorB, background *color.Color
 	labelCols string
@@ -35,22 +36,28 @@ type Display struct {
 }
 
 // MakeDisplay return a new display configuration
-func MakeDisplay(chars CharSet, colors ColorSet, size uint) Display {
+func MakeDisplay(chars CharSet, colors ColorSet, size uint8) Display {
 	if size > 20 { size = 20 }
 	display := Display{ size, chars.white, chars.black,
 		colors.colorW, colors.colorB, colors.background,
 		"", [20]string{}, [4][20]rune{} }
 	colorLabel := colors.label.SprintFunc()
-	if uint(len(chars.rows)) >= size {
+	if uint8(len(chars.rows)) >= size {
 		display.labelCols = colorLabel(" " + chars.columns[:size])
 		rowRunes := []rune(chars.rows)
-		for i := uint(0); i < size; i++ {
+		for i := uint8(0); i < size; i++ {
 			display.labelRows[i] = colorLabel(string(rowRunes[i]))
 		}
 	} else {
 		display.labelCols = colorLabel("  " + chars.columns[:size])
-		for i := uint(0); i < size; i++ {
-			display.labelRows[i] = colorLabel(i+1)
+		for i := uint8(0); i < size; i++ {
+			var label string
+			if i < 9 {
+				label = fmt.Sprintf(" %d", i+1)
+			} else {
+				label = fmt.Sprintf("%d", i+1)
+			}
+			display.labelRows[i] = colorLabel(label)
 		}
 	}
 	// generate the layout from the size of the board
@@ -58,7 +65,7 @@ func MakeDisplay(chars CharSet, colors ColorSet, size uint) Display {
 	display.layout[1][0] = chars.ml
 	display.layout[2][0] = chars.cl
 	display.layout[3][0] = chars.bl
-	for i := uint(1); i < size-1; i++ {
+	for i := uint8(1); i < size-1; i++ {
 		if i%6 == 3 { 
 			display.layout[0][i] = chars.tc
 			display.layout[1][i] = chars.cv
@@ -79,10 +86,11 @@ func MakeDisplay(chars CharSet, colors ColorSet, size uint) Display {
 }
 
 // Draw the board
-func (display Display) Draw(board Board) {
+func (display *Display) Draw(board Board) {
+	tm.MoveCursor(0,0)
 	layout := [20][20]rune{}
 	// generate the board
-	for i := uint(0); i < display.size; i++ {
+	for i := uint8(0); i < display.size; i++ {
 		row := 1
 		if i == 0 { row = 0 } else if i == display.size-1 { row = 3 } else if i%6 == 3 { row = 2 }
 		layout[i] = display.layout[row]
@@ -91,16 +99,16 @@ func (display Display) Draw(board Board) {
 	for _, stone := range board.set {
 		stoneRune := display.stoneW
 		if stone.team { stoneRune = display.stoneB }
-		layout[stone.x][stone.y] = stoneRune
+		layout[stone.y][stone.x] = stoneRune
 	}
 	// add labels above the board
 	fmt.Println(display.labelCols)
 	// convert to string, put the colors and display
-	for i := uint(0); i < display.size; i++ {
+	for i := uint8(0); i < display.size; i++ {
 		var mainBuffer, secondBuffer bytes.Buffer
 		mainBuffer.WriteString(display.labelRows[i])
 		secondBuffer.WriteRune(layout[i][0]) // push first rune in buffer
-		for j := uint(1); j < display.size; j++ {
+		for j := uint8(1); j < display.size; j++ {
 			curr := display.typeRune(layout[i][j])
 			prev := display.typeRune(layout[i][j-1])
 			if curr != prev {
@@ -116,7 +124,7 @@ func (display Display) Draw(board Board) {
 	}
 }
 
-func (display Display) selectColor(r rune) *color.Color {
+func (display *Display) selectColor(r rune) *color.Color {
 	if r == display.stoneW {
 		return display.colorW
 	} else if r == display.stoneB {
@@ -125,7 +133,7 @@ func (display Display) selectColor(r rune) *color.Color {
 	return display.background
 }
 
-func (display Display) typeRune(r rune) rune {
+func (display *Display) typeRune(r rune) rune {
 	if r != display.stoneW && r != display.stoneB {
 		return 0
 	}
