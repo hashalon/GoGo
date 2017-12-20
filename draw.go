@@ -1,19 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"bytes"
+	"fmt"
 	"github.com/fatih/color"
-	tm "github.com/buger/goterm"
 )
 
 // CharSet define the characters to use for the display
 type CharSet struct {
-	white, black,
+	white, black, selector,
 	tl, tm, tr,
 	ml, mm, mr,
 	bl, bm, br,
-		tc,
+	    tc,
 	cl, cc, cr,
 	    bc,
 	ch, cv rune
@@ -22,25 +21,25 @@ type CharSet struct {
 
 // ColorSet set of colors used to display the game
 type ColorSet struct {
-	colorW, colorB, background, label *color.Color
+	colorW, colorB, selector, background, label *color.Color
 }
 
 // Display configuration to display board
 type Display struct {
-	size uint8
-	stoneW, stoneB rune
-	colorW, colorB, background *color.Color
-	labelCols string
-	labelRows [20]string
-	layout [4][20]rune
+	size                                    uint8
+	stoneW, stoneB, selector                rune
+	colorW, colorB, colorSelect, background *color.Color
+	labelCols                               string
+	labelRows                               [20]string
+	layout                                  [4][20]rune
 }
 
 // MakeDisplay return a new display configuration
 func MakeDisplay(chars CharSet, colors ColorSet, size uint8) Display {
 	if size > 20 { size = 20 }
-	display := Display{ size, chars.white, chars.black,
-		colors.colorW, colors.colorB, colors.background,
-		"", [20]string{}, [4][20]rune{} }
+	display := Display{size, chars.white, chars.black, chars.selector,
+		colors.colorW, colors.colorB, colors.selector, colors.background,
+		"", [20]string{}, [4][20]rune{}}
 	colorLabel := colors.label.SprintFunc()
 	if uint8(len(chars.rows)) >= size {
 		display.labelCols = colorLabel(" " + chars.columns[:size])
@@ -66,7 +65,7 @@ func MakeDisplay(chars CharSet, colors ColorSet, size uint8) Display {
 	display.layout[2][0] = chars.cl
 	display.layout[3][0] = chars.bl
 	for i := uint8(1); i < size-1; i++ {
-		if i%6 == 3 { 
+		if i%6 == 3 {
 			display.layout[0][i] = chars.tc
 			display.layout[1][i] = chars.cv
 			display.layout[2][i] = chars.cc
@@ -86,13 +85,18 @@ func MakeDisplay(chars CharSet, colors ColorSet, size uint8) Display {
 }
 
 // Draw the board
-func (display *Display) Draw(board Board) {
-	tm.MoveCursor(0,0)
+func (display *Display) Draw(board Board, highlight Vec2) {
 	layout := [20][20]rune{}
 	// generate the board
 	for i := uint8(0); i < display.size; i++ {
 		row := 1
-		if i == 0 { row = 0 } else if i == display.size-1 { row = 3 } else if i%6 == 3 { row = 2 }
+		if i == 0 { 
+			row = 0 
+		} else if i == display.size-1 { 
+			row = 3 
+		} else if i%6 == 3 {
+			row = 2 
+		}
 		layout[i] = display.layout[row]
 	}
 	// place the stones
@@ -101,6 +105,12 @@ func (display *Display) Draw(board Board) {
 		if stone.team { stoneRune = display.stoneB }
 		layout[stone.y][stone.x] = stoneRune
 	}
+	// add the selector
+	if highlight.x > -1 && highlight.x < 19 &&
+	   highlight.y > -1 && highlight.y < 19 {
+		layout[highlight.x][highlight.y] = display.selector
+	}
+
 	// add labels above the board
 	fmt.Println(display.labelCols)
 	// convert to string, put the colors and display
@@ -125,17 +135,16 @@ func (display *Display) Draw(board Board) {
 }
 
 func (display *Display) selectColor(r rune) *color.Color {
-	if r == display.stoneW {
-		return display.colorW
-	} else if r == display.stoneB {
-		return display.colorB
+	switch r {
+	case display.selector : return display.colorSelect
+	case display.stoneW   : return display.colorW
+	case display.stoneB   : return display.colorB
 	}
 	return display.background
 }
 
 func (display *Display) typeRune(r rune) rune {
-	if r != display.stoneW && r != display.stoneB {
-		return 0
-	}
+	if r != display.stoneW &&
+	   r != display.stoneB { return 0 }
 	return r
 }
