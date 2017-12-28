@@ -1,14 +1,16 @@
 package main
 
+// to correct
+// https://github.com/nsf/termbox-go
+// https://github.com/1984weed/2048-go/blob/master/application.go
+
+
 import (
 	"time"
 	"fmt"
 	"regexp"
 	"strconv"
-
-	tm "github.com/buger/goterm"
-	"github.com/fatih/color"
-	term "github.com/nsf/termbox-go"
+	"github.com/nsf/termbox-go"
 )
 
 // Game a board and a display
@@ -42,21 +44,22 @@ func MakeGame() Game {
 		'─', '│',
 		"ABCDEFGHIJKLMNOPQRST", ""} // */
 	colors := ColorSet{
-		color.New(color.FgHiWhite),
-		color.New(color.FgHiRed),
-		color.New(color.FgHiBlack),
-		color.New(color.BgHiCyan),
-		color.New(color.FgYellow)}
+		termbox.ColorWhite,
+		termbox.ColorRed,
+		termbox.ColorBlack,
+		termbox.ColorCyan,
+		termbox.ColorYellow}
 	// start the game with black
 	return Game{MakeBoard(19), MakeDisplay(chars, colors, 19), Vec2{10, 10}, true}
 }
 
 // Turn manage one turn of the game
 func (game *Game) Turn() {
-	tm.Clear()
+	const defcol = termbox.ColorDefault
+	termbox.Clear(defcol, defcol)
 	// detect arrow keys input
 	for {
-		tm.MoveCursor(0, 0)
+		termbox.SetCursor(0, 0)
 		// move the selector and check if we try a position
 		selected := false
 		go func () { selected = game.Interact() }()
@@ -66,7 +69,7 @@ func (game *Game) Turn() {
 			   game.board.Place(stone) { break }
 		} else {
 			game.display.Draw(game.board, game.selector)
-			tm.Flush()
+			termbox.Flush()
 			time.Sleep(time.Second)
 		}
 	}
@@ -77,25 +80,25 @@ func (game *Game) Turn() {
 
 // Interact manage key inputs
 func (game *Game) Interact() bool {
-	switch ev := term.PollEvent(); ev.Type {
-	case term.EventKey:
+	switch ev := termbox.PollEvent(); ev.Type {
+	case termbox.EventKey:
 		switch ev.Key {
-		case term.KeyArrowUp:
+		case termbox.KeyArrowUp:
 			game.selector.y++
 			if game.selector.y > 18 { game.selector.y = 18 }
-		case term.KeyArrowDown:
+		case termbox.KeyArrowDown:
 			game.selector.y--
 			if game.selector.y <  0 { game.selector.y =  0 }
-		case term.KeyArrowLeft:
+		case termbox.KeyArrowLeft:
 			game.selector.x--
 			if game.selector.x <  0 { game.selector.x =  0 }
-		case term.KeyArrowRight:
+		case termbox.KeyArrowRight:
 			game.selector.x++
 			if game.selector.y > 18 { game.selector.x = 18 }
-		case term.KeyEnter:
+		case termbox.KeyEnter:
 			return true
 		}
-	case term.EventError:
+	case termbox.EventError:
 		panic(ev.Err)
 	}
 	return false
@@ -110,12 +113,11 @@ var (
 
 // TurnText manage one turn of the game
 func (game *Game) TurnText() {
-	tm.Clear()
 	// display the current state of the game
 	game.display.Draw(game.board, Vec2{-1, -1})
 	// retry until we have a valid position
 	for {
-		tm.MoveCursor(0, 0)
+		termbox.SetCursor(0, 0)
 		var pos Vec2
 		pos, invalid = game.SelectText()
 		if !invalid {
@@ -128,7 +130,6 @@ func (game *Game) TurnText() {
 	game.team = !game.team
 	invalid  = false
 	occupied = false
-	tm.Flush()
 }
 
 // SelectText selection for the current player, return a error for incorrect input
@@ -136,16 +137,16 @@ func (game *Game) SelectText() (Vec2, bool) {
 
 	// state the error
 	if invalid {
-		fmt.Println(color.YellowString("Position selected is invalid!"))
+		fmt.Println("Position selected is invalid!")
 	} else if occupied {
-		fmt.Println(color.YellowString("Position is occupied already!"))
+		fmt.Println("Position is occupied already!")
 	}
 
 	// ask the current player to place a stone
 	if game.team {
-		game.display.colorB.Printf("Black place a stone: ")
+		fmt.Printf("Black place a stone: ")
 	} else {
-		game.display.colorW.Printf("White place a stone: ")
+		fmt.Printf("White place a stone: ")
 	}
 
 	// read the selected position

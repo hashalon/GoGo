@@ -1,9 +1,13 @@
 package main
 
+// to correct
+// https://github.com/nsf/termbox-go
+// https://github.com/1984weed/2048-go/blob/master/application.go
+
 import (
 	"bytes"
 	"fmt"
-	"github.com/fatih/color"
+	"github.com/nsf/termbox-go"
 )
 
 // CharSet define the characters to use for the display
@@ -21,14 +25,14 @@ type CharSet struct {
 
 // ColorSet set of colors used to display the game
 type ColorSet struct {
-	colorW, colorB, selector, background, label *color.Color
+	colorW, colorB, selector, background, label termbox.Attribute
 }
 
 // Display configuration to display board
 type Display struct {
 	size                                    uint8
 	stoneW, stoneB, selector                rune
-	colorW, colorB, colorSelect, background *color.Color
+	colorW, colorB, colorSelect, background termbox.Attribute
 	labelCols                               string
 	labelRows                               [20]string
 	layout                                  [4][20]rune
