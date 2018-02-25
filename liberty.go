@@ -14,12 +14,12 @@ func MakeLibSet() LibSet {
 }
 
 // GatherLiberties return a set of liberties and a set of stones
-func GatherLiberties(board Board, stone Stone) LibSet {
+func GatherLiberties(board * Board, stone Stone) LibSet {
 	libs := MakeLibSet()
 	gatherLibs(board, stone.Vec2, stone.team, true, &libs)
 	return libs
 }
-func gatherLibs(board Board, pos Vec2, team, checkNext bool, libs *LibSet) {
+func gatherLibs(board * Board, pos Vec2, team, checkNext bool, libs * LibSet) {
 	id := pos.ID()
 	libs.checked[id] = pos // position is checked
 	// for each stone around ours

@@ -4,14 +4,14 @@ package main
 
 // Stone stone placed in the board
 type Stone struct {
-	Vec2
-	team bool
+	Vec2      // position of the stone in the board
+	team bool // color    of the stone
 }
 
 // Board board of the game
 type Board struct {
-	size uint8
-	set  map[uint]Stone
+	size uint8          // board size (width and height)
+	set  map[uint]Stone // structure to quickly find stones in the board
 }
 
 // MakeBoard build a new empty board
@@ -20,24 +20,24 @@ func MakeBoard(size uint8) Board {
 }
 
 // FindStone find the stone at the given position
-func (board Board) FindStone(pos Vec2) (Stone, bool) {
+func (board * Board) FindStone(pos Vec2) (Stone, bool) {
 	return board.findID(pos.ID())
 }
-func (board Board) findID(id uint) (Stone, bool) {
+func (board * Board) findID(id uint) (Stone, bool) {
 	stone, found := board.set[id]
 	return stone, found
 }
-func (board Board) remID(id uint) {
+func (board * Board) remID(id uint) {
 	delete(board.set, id)
 }
 
 // Valid return true if the position is in the board
-func (board Board) Valid(pos Vec2) bool {
+func (board * Board) Valid(pos Vec2) bool {
 	return -1 < pos.x && pos.x < int8(board.size) && -1 < pos.y && pos.y < int8(board.size)
 }
 
 // Place place a new stone in the board if possible and capture, true if placed
-func (board Board) Place(stone Stone) bool {
+func (board * Board) Place(stone Stone) bool {
 	id := stone.ID()
 
 	// check that the position is not occupied
