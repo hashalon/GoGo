@@ -7,7 +7,7 @@ type Vec2 struct {
 
 // Inv return the inverse vector
 func (v Vec2) Inv() Vec2 {
-	return Vec2{v.x, v.y}
+	return Vec2{-v.x, -v.y}
 }
 
 // Add return the sum of two vectors
@@ -38,4 +38,9 @@ func (v Vec2) Rot(rot int8) Vec2 {
 // ID return id based on position
 func (v Vec2) ID() uint {
 	return (uint(v.x) & 0xff) | ((uint(v.y) & 0xff) << 8)
+}
+
+// return a vector that is invalid
+func InvalidVec() Vec2 {
+	return Vec2{int8(-1), int8(-1)}
 }
