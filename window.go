@@ -1,12 +1,9 @@
 package main
 
 import (
-	//"fmt"
 	"log"
 	"image"
-	//"image/color"
 	_ "image/png"
-
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
@@ -40,7 +37,7 @@ type Window struct {
 var window * Window
 
 // initialize the window and run the game
-func (win * Window) Init(board * Board) {
+func (win * Window) Start(board * Board) {
 
 	// get the images to display
 	var err error
