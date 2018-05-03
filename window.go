@@ -13,14 +13,15 @@ const (
 	GOBAN_SIZE  = 608
 	STONE_SIZE  = 32
 	BANNER_SIZE = 32
+	PASS_SIZE   = 64
 )
 
 // store the necessities to draw the board
 type Window struct {
 	// images to draw the board
-	stoneBlackImage, bannerBlackImage,
-	stoneWhiteImage, bannerWhiteImage,
-	gobanImage * ebiten.Image
+	stoneBlackImage, bannerBlackImage, terrBlackImage,
+	stoneWhiteImage, bannerWhiteImage, terrWhiteImage,
+	bannerEndImage , gobanImage * ebiten.Image
 
 	// draw options for the board and banner
 	gobanOpts, bannerOpts * ebiten.DrawImageOptions
@@ -31,8 +32,14 @@ type Window struct {
 
 	// the board to display
 	board * Board
-	// team to play
-	team bool
+	// team to play: false=black ; true=white
+	team, hasEnded bool
+
+	// count the number of passes
+	blackPasses, whitePasses int8
+
+	// end game containing the set of all territories
+	end EndGame
 }
 var window * Window
 
@@ -41,11 +48,14 @@ func (win * Window) Start(board * Board) {
 
 	// get the images to display
 	var err error
-	if win.gobanImage,       _, err = ebitenutil.NewImageFromFile("goban.png",       ebiten.FilterNearest); err != nil {log.Fatal(err)}
-	if win.stoneBlackImage,  _, err = ebitenutil.NewImageFromFile("stoneBlack.png",  ebiten.FilterNearest); err != nil {log.Fatal(err)}
-	if win.stoneWhiteImage,  _, err = ebitenutil.NewImageFromFile("stoneWhite.png",  ebiten.FilterNearest); err != nil {log.Fatal(err)}
-	if win.bannerBlackImage, _, err = ebitenutil.NewImageFromFile("bannerBlack.png", ebiten.FilterNearest); err != nil {log.Fatal(err)}
-	if win.bannerWhiteImage, _, err = ebitenutil.NewImageFromFile("bannerWhite.png", ebiten.FilterNearest); err != nil {log.Fatal(err)}
+	if win.gobanImage,       _, err = ebitenutil.NewImageFromFile("goban.png",          ebiten.FilterNearest); err != nil {log.Fatal(err)}
+	if win.stoneBlackImage,  _, err = ebitenutil.NewImageFromFile("stoneBlack.png",     ebiten.FilterNearest); err != nil {log.Fatal(err)}
+	if win.stoneWhiteImage,  _, err = ebitenutil.NewImageFromFile("stoneWhite.png",     ebiten.FilterNearest); err != nil {log.Fatal(err)}
+	if win.bannerBlackImage, _, err = ebitenutil.NewImageFromFile("bannerBlack.png",    ebiten.FilterNearest); err != nil {log.Fatal(err)}
+	if win.bannerWhiteImage, _, err = ebitenutil.NewImageFromFile("bannerWhite.png",    ebiten.FilterNearest); err != nil {log.Fatal(err)}
+	if win.bannerEndImage,   _, err = ebitenutil.NewImageFromFile("bannerEnd.png",      ebiten.FilterNearest); err != nil {log.Fatal(err)}
+	if win.terrBlackImage,   _, err = ebitenutil.NewImageFromFile("territoryBlack.png", ebiten.FilterNearest); err != nil {log.Fatal(err)}
+	if win.terrWhiteImage,   _, err = ebitenutil.NewImageFromFile("territoryWhite.png", ebiten.FilterNearest); err != nil {log.Fatal(err)}
 
 	// if we cannot load the icon, it doesn't matter
 	_, icon, err := ebitenutil.NewImageFromFile("icon.png", ebiten.FilterNearest)
@@ -57,8 +67,12 @@ func (win * Window) Start(board * Board) {
 	win.bannerOpts.GeoM.Translate(0, GOBAN_SIZE)
 
 	win.board = board
-	win.team  = false
+	win.team  = false // start with black
 	window = win
+
+	win.blackPasses = 0
+	win.whitePasses = 0
+	win.hasEnded = false
 
 	// place the selector in the center
 	win.selectorPos.x = int8(10)
@@ -84,45 +98,102 @@ func (win * Window) Update() {
 	// when we click try to place a stone in the board
 	// if it succedes, end turn
 	if click && !win.wasClicked {
-		stone := Stone{win.BoardCoords(x, y), win.team}
-		if win.board.Place(stone) {
+
+		// if the game is over, define the territories
+		// if the player pressed the pass button, pass the turn
+		// if we clicked on the goban, place a stone
+		if win.IsOver() {
+			// get the territories if null
+			if !win.hasEnded {win.end = MakeTerritories(win.board)}
+			
+		} else if PassButton(x, y) {
+			// increment the right passes counter
+			if win.team {win.whitePasses += 1} else {win.blackPasses += 1}
 			win.team = !win.team // end turn
+		} else {
+			stone := Stone{BoardCoords(x, y), win.team}
+			if win.board.Place(stone) {
+				win.team = !win.team // end turn
+			}
 		}
 	}
 
 	// keep track of the state of click
-	if click {win.wasClicked = true} else {win.wasClicked = false}
+	win.wasClicked = click
 }
 
 // used to redraw the board only when necessary
 func (win * Window) Redraw(screen * ebiten.Image) {
-	// draw the goban and the banner
+	var img * ebiten.Image // shortcut to access the image to print
+
+	// draw the goban
 	screen.DrawImage(win.gobanImage, win.gobanOpts)
-	if win.team {screen.DrawImage(win.bannerWhiteImage, win.bannerOpts)
-	} else      {screen.DrawImage(win.bannerBlackImage, win.bannerOpts)}
+
+	// if the game is over display the end banner,
+	// otherwise display the banner of the player
+	if win.IsOver() {
+		img = win.bannerEndImage
+
+		// display the territories too
+		for _, terr := range win.end.set {
+			noteam := terr.whiteCount == terr.blackCount
+			team   := terr.whiteCount >  terr.blackCount
+
+			// pick the image to use based on the team of the territory
+			if noteam {continue} else if team {img = win.terrWhiteImage} else {img = win.terrBlackImage}
+			// print the territory
+			for _, pos := range terr.set {
+				x, y := WindowCoords(pos)
+				opts := &ebiten.DrawImageOptions{}
+				opts.GeoM.Translate(x, y)
+				screen.DrawImage(img, opts)
+			}
+		}
+
+	} else if win.team {img = win.bannerWhiteImage} else {img = win.bannerBlackImage}
+	screen.DrawImage(img, win.bannerOpts)
 
 	// for each stone on the board, draw it on the display
 	for _, stone := range win.board.set {
-		x, y := win.WindowCoords(stone.Vec2)
+		x, y := WindowCoords(stone.Vec2)
 		opts := &ebiten.DrawImageOptions{}
 		opts.GeoM.Translate(x, y)
-		if stone.team {screen.DrawImage(win.stoneWhiteImage, opts)
-		} else        {screen.DrawImage(win.stoneBlackImage, opts)}
+
+		// print the stone at the right location
+		if stone.team {img = win.stoneWhiteImage} else {img = win.stoneBlackImage}
+		screen.DrawImage(img, opts)
+	}
+
+	// display the scores as an overlay
+	if win.IsOver() {
+		// TODO...
 	}
 }
 
 // from window coords, get board coords
 // used to click on the board
-func (win * Window) BoardCoords(x, y int) Vec2 {
+func BoardCoords(x, y int) Vec2 {
 	if x < 0 || y < 0 || x > GOBAN_SIZE || y > GOBAN_SIZE {return InvalidVec()}
 	return Vec2{int8(x / STONE_SIZE), int8(y / STONE_SIZE)}
 }
 
 // from board coords, get window coords
 // used to draw elements on the board
-func (win * Window) WindowCoords(pos Vec2) (float64, float64) {
+func WindowCoords(pos Vec2) (float64, float64) {
 	return float64(pos.x) * STONE_SIZE, float64(pos.y) * STONE_SIZE
 }
+
+// tells if the cursor is hover the pass button
+func PassButton(x, y int) bool {
+	return y > GOBAN_SIZE && x < PASS_SIZE
+}
+
+// tells if the game is over: if both players have passed twice
+func (win * Window) IsOver () bool {
+	return win.blackPasses >= 2 && win.whitePasses >= 2
+}
+
+/* EBITEN */
 
 // function called in loop by ebiten
 func update (screen * ebiten.Image) error {
