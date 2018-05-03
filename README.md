@@ -8,6 +8,12 @@ The banner at the bottom show which player can play.
 
 There is no end game yet.
 
+## Release
+You can grab a precompiled version of the game [here](https://github.com/harraps/GoGo/releases).
+Execute
+- `gogo.exe` for windows 64bits
+- `gogo` for Linux 64bits
+
 ## Compiling
 You'll need the library [Ebiten by hajimehoshi](https://github.com/hajimehoshi/ebiten) to compile it.
 to build, execute:
@@ -18,7 +24,3 @@ to run, execute:
 ```
 go run board.go liberty.go main.go vector.go window.go
 ```
-
-## Side notes
-The program has only been tested on Linux until now.
-If you have trouble compiling it on Windows, I cannot provide help, sorry.
