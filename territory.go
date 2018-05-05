@@ -10,6 +10,9 @@ type EndGame struct {
 
 	// the board to explore
 	board * Board
+
+	// number of cells for each team
+	blackCount, whiteCount uint
 }
 
 // Territory: free cells surrounded by stones
@@ -25,12 +28,12 @@ type Territory struct {
 	set map[uint]Vec2
 
 	// number of stones of each color surrounding the territory
-	blackCount, whiteCount int8
+	blackCount, whiteCount uint
 }
 
 // MakeLibSet create a new empty libset
 func MakeTerritories(board * Board) EndGame {
-	end := EndGame{make(map[uint]Territory), make(map[uint]Vec2), board}
+	end := EndGame{make(map[uint]Territory), make(map[uint]Vec2), board, 0, 0}
 
 	// for each cell of the goban, get territories
 	for x := 0; x < int(board.size); x++ {
@@ -42,6 +45,14 @@ func MakeTerritories(board * Board) EndGame {
 
 			terr := end.makeTerritory(pos)
 			end.set[terr.start.ID()] = terr
+
+			// same number for each => doesn't belong to anyone
+			if terr.blackCount == terr.whiteCount {
+			} else if terr.blackCount > terr.whiteCount { // more blacks
+				end.blackCount += terr.count
+			} else { // more whites
+				end.whiteCount += terr.count
+			}
 		}
 	}
 

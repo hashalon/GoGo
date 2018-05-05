@@ -1,11 +1,19 @@
 package main
 
 import (
+	"fmt"
+
 	"log"
 	"image"
+	"image/color"
 	_ "image/png"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
+	"github.com/hajimehoshi/ebiten/text"
+	"github.com/hajimehoshi/ebiten/examples/resources/fonts"
+
+	"github.com/golang/freetype/truetype"
+	"golang.org/x/image/font"
 )
 
 // size, padding, scaling
@@ -15,6 +23,7 @@ const (
 	BANNER_SIZE = 32
 	PASS_SIZE   = 64
 )
+var FONT font.Face
 
 // store the necessities to draw the board
 type Window struct {
@@ -81,6 +90,16 @@ func (win * Window) Start(board * Board) {
 
 	// run the game loop
 	if err := ebiten.Run(update, GOBAN_SIZE, GOBAN_SIZE + BANNER_SIZE, 1, "GoGo"); err != nil {log.Fatal(err)}
+
+	// select the font to use
+	tt, err := truetype.Parse(fonts.MPlus1pRegular_ttf)
+	if err != nil {log.Fatal(err)}
+	truetype.NewFace(tt, &truetype.Options{
+		Size:    24,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+
 }
 
 // update selector position and play the game
@@ -143,6 +162,7 @@ func (win * Window) Redraw(screen * ebiten.Image) {
 			if noteam {continue} else if team {img = win.terrWhiteImage} else {img = win.terrBlackImage}
 			// print the territory
 			for _, pos := range terr.set {
+				fmt.Println("X: %d Y: %d", pos.x, pos.y)
 				x, y := WindowCoords(pos)
 				opts := &ebiten.DrawImageOptions{}
 				opts.GeoM.Translate(x, y)
@@ -166,7 +186,10 @@ func (win * Window) Redraw(screen * ebiten.Image) {
 
 	// display the scores as an overlay
 	if win.IsOver() {
-		// TODO...
+		lineBlack := fmt.Sprintf("Black: %d", win.end.blackCount)
+		lineWhite := fmt.Sprintf("White: %d", win.end.whiteCount)
+		text.Draw(screen, lineBlack, FONT, GOBAN_SIZE / 2, GOBAN_SIZE / 2 - 24, color.White)
+		text.Draw(screen, lineWhite, FONT, GOBAN_SIZE / 2, GOBAN_SIZE / 2 + 24, color.White)
 	}
 }
 
