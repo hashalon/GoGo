@@ -37,10 +37,10 @@ func (v Vec2) Rot(rot int8) Vec2 {
 
 // ID return id based on position
 func (v Vec2) ID() uint {
-	return (uint(v.x) & 0xff) | ((uint(v.y) & 0xff) << 8)
+	return uint(v.x) | (uint(v.y) << 8)
 }
 
 // return a vector that is invalid
 func InvalidVec() Vec2 {
-	return Vec2{int8(-1), int8(-1)}
+	return Vec2{int8(-128), int8(-128)}
 }
