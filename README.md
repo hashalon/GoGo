@@ -1,5 +1,6 @@
 # GoGo
-Go game made in Go language
+Go game made in Go language  
+![GoGo](screenshots/gogo.png)
 
 ## Play
 You can read the rules of Go on [wikipedia](https://en.wikipedia.org/wiki/Rules_of_Go).
